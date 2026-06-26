@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>班級數學成績管理系統</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<style>
+:root{
+    --m-pink:#FFB7B2;
+    --m-green:#BFFCC6;
+    --m-blue:#B2E2F2;
+    --m-yellow:#FFFFBA;
+    --m-purple:#D5AAFF;
+    --text:#4f4f4f;
+}
+
+/* =========================
+   Pikmin 森林背景
+========================= */
+body{
+    font-family:"PingFang TC","Microsoft JhengHei",sans-serif;
+
+    margin:0;
+    padding:20px;
+
+    color:var(--text);
+
+    background:
+        linear-gradient(rgba(255,255,255,0.55),rgba(255,255,255,0.55)),
+        url("https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop");
+
+    background-size:cover;
+    background-position:center;
+    background-attachment:fixed;
+
+    overflow-x:hidden;
+}
+
+/* 漂浮葉子 */
+body::before,
+body::after{
+    content:"🌱 🌼 🍃";
+    position:fixed;
+    font-size:40px;
+    opacity:0.18;
+    animation:floatLeaf 12s linear infinite;
+    z-index:0;
+}
+
+body::before{
+    left:-10%;
+    top:20%;
+}
+
+body::after{
+    left:100%;
+    top:70%;
+    animation-duration:18s;
+}
+
+@keyframes floatLeaf{
+    0%{
+        transform:translateX(0) rotate(0deg);
+    }
+    100%{
+        transform:translateX(-120vw) rotate(360deg);
+    }
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+    position:relative;
+    z-index:2;
+}
+
+/* =========================
+   卡片
+========================= */
+.card{
+    background:rgba(255,255,255,0.88);
+    backdrop-filter:blur(10px);
+
+    border-radius:24px;
+
+    padding:25px;
+
+    margin-bottom:25px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.08);
+
+    border:2px solid rgba(255,255,255,0.7);
+}
+
+.main-grid{
+    display:grid;
+    grid-template-columns:1.2fr 0.8fr;
+    gap:25px;
+}
+
+@media(max-width:900px){
+    .main-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+/* =========================
+   標題
+========================= */
+.form-title{
+    font-size:2.4rem;
+    font-weight:900;
+    color:#5e9f63;
+
+    margin-bottom:20px;
+
+    text-shadow:2px 2px 0 rgba(255,255,255,0.7);
+}
+
+h2{
+    color:#5e9f63;
+}
+
+/* =========================
+   表單
+========================= */
+.input-group{
+    margin-bottom:16px;
+}
+
+label{
+    display:block;
+    margin-bottom:8px;
+    font-weight:bold;
+}
+
+input{
+    width:100%;
+    box-sizing:border-box;
+
+    padding:15px;
+
+    border-radius:14px;
+
+    border:2px solid #e7efe6;
+
+    font-size:1.05rem;
+
+    transition:0.2s;
+}
+
+input:focus{
+    outline:none;
+    border-color:#8bd58f;
+    box-shadow:0 0 10px rgba(139,213,143,0.3);
+}
+
+/* =========================
+   按鈕
+========================= */
+.action-btns{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr;
+    gap:10px;
+
+    margin-top:20px;
+}
+
+button{
+    border:none;
+
+    border-radius:14px;
+
+    padding:15px;
+
+    font-size:1rem;
+    font-weight:bold;
+
+    cursor:pointer;
+
+    transition:0.2s;
+}
+
+button:hover{
+    transform:translateY(-3px) scale(1.02);
+    opacity:0.92;
+}
+
+.btn-save{
+    background:linear-gradient(135deg,#BFFCC6,#8fe69b);
+}
+
+.btn-download{
+    background:linear-gradient(135deg,#B2E2F2,#8bcde3);
+}
+
+.btn-clear{
+    background:linear-gradient(135deg,#f0f0f0,#dadada);
+    color:#777;
+}
+
+/* =========================
+   計數器
+========================= */
+.counter-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+
+    margin-top:25px;
+}
+
+.counter-card{
+    text-align:center;
+
+    padding:15px;
+
+    border-radius:18px;
+
+    font-weight:bold;
+
+    box-shadow:0 5px 10px rgba(0,0,0,0.05);
+}
+
+.c-top{
+    background:var(--m-yellow);
+}
+
+.c-good{
+    background:var(--m-blue);
+}
+
+.c-bad{
+    background:var(--m-pink);
+}
+
+.c-num{
+    display:block;
+    margin-top:6px;
+    font-size:1.8rem;
+}
+
+/* =========================
+   表格
+========================= */
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th{
+    background:#eef9ec;
+
+    padding:15px;
+
+    border-radius:10px;
+
+    color:#4f7f55;
+}
+
+td{
+    padding:15px;
+
+    text-align:center;
+
+    font-weight:bold;
+
+    border-bottom:1px solid #f0f0f0;
+}
+
+tr:hover{
+    background:rgba(191,252,198,0.15);
+}
+
+.fail-text{
+    color:#ff5d5d;
+}
+
+.gift-tag{
+    background:#fff3a3;
+
+    padding:5px 10px;
+
+    border-radius:10px;
+
+    font-size:0.85rem;
+}
+
+.study-tag{
+    background:#ffb7b2;
+    color:white;
+
+    padding:5px 10px;
+
+    border-radius:10px;
+
+    font-size:0.85rem;
+}
+
+.chart-container{
+    height:320px;
+    position:relative;
+}
+
+/* =========================
+   Pikmin 小裝飾
+========================= */
+.pikmin{
+    position:fixed;
+    font-size:48px;
+    z-index:1;
+    opacity:0.85;
+    animation:bounce 3s infinite ease-in-out;
+}
+
+.p1{
+    bottom:20px;
+    left:20px;
+}
+
+.p2{
+    bottom:20px;
+    right:20px;
+    animation-delay:1s;
+}
+
+.p3{
+    top:20px;
+    right:80px;
+    animation-delay:2s;
+}
+
+@keyframes bounce{
+    0%,100%{
+        transform:translateY(0);
+    }
+    50%{
+        transform:translateY(-12px);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Pikmin 裝飾 -->
+<div class="pikmin p1">🌱</div>
+<div class="pikmin p2">🌼</div>
+<div class="pikmin p3">🍃</div>
+
+<div class="container">
+
+    <div class="main-grid">
+
+        <!-- 左側 -->
+        <section class="card">
+
+            <h2 class="form-title">
+                新增 / 更新成績
+            </h2>
+
+            <form id="scoreForm">
+
+                <div class="input-group">
+                    <label for="nameIn">
+                        學生姓名（重複則更新）
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nameIn"
+                        required
+                        placeholder="請輸入學生姓名"
+                    />
+                </div>
+
+                <div class="input-group">
+                    <label for="scoreIn">
+                        數學分數（0-100）
+                    </label>
+
+                    <input
+                        type="number"
+                        id="scoreIn"
+                        min="0"
+                        max="100"
+                        required
+                    />
+                </div>
+
+                <div class="action-btns">
+
+                    <button type="submit" class="btn-save">
+                        🌱 登錄 / 更新
+                    </button>
+
+                    <button type="button" class="btn-download" id="downloadBtn">
+                        📥 CSV
+                    </button>
+
+                    <button type="button" class="btn-clear" id="clearBtn">
+                        🗑 清空
+                    </button>
+
+                </div>
+
+            </form>
+
+            <!-- 計數器 -->
+            <div class="counter-row">
+
+                <div class="counter-card c-top">
+                    頂尖（90-100）
+                    <span class="c-num" id="n-top">0</span>
+                </div>
+
+                <div class="counter-card c-good">
+                    優良（80-89）
+                    <span class="c-num" id="n-good">0</span>
+                </div>
+
+                <div class="counter-card c-bad">
+                    待加強（<60）
+                    <span class="c-num" id="n-bad">0</span>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- 圓餅圖 -->
+        <section class="card">
+
+            <h2>📊 及格率分析</h2>
+
+            <div class="chart-container">
+                <canvas id="scorePieChart"></canvas>
+            </div>
+
+        </section>
+
+    </div>
+
+    <!-- 排行榜 -->
+    <section class="card">
+
+        <h2>🏆 班級成績排行榜</h2>
+
+        <div style="overflow-x:auto;">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>名次</th>
+                        <th>姓名</th>
+                        <th>分數</th>
+                        <th>獎懲與備註</th>
+                    </tr>
+                </thead>
+
+                <tbody id="rankBody"></tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script>
+/* =========================
+   LocalStorage
+========================= */
+let db =
+    JSON.parse(localStorage.getItem("teacher_db")) || {};
+
+let chartObj = null;
+
+Chart.register(ChartDataLabels);
+
+const form = document.querySelector("#scoreForm");
+const rankBody = document.querySelector("#rankBody");
+
+/* =========================
+   初始化
+========================= */
+window.onload = refreshUI;
+
+/* =========================
+   新增 / 更新
+========================= */
+form.addEventListener("submit",(e)=>{
+
+    e.preventDefault();
+
+    const name =
+        document.querySelector("#nameIn")
+        .value
+        .trim();
+
+    const score =
+        parseInt(
+            document.querySelector("#scoreIn").value
+        );
+
+    if(!name){
+        alert("請輸入姓名");
+        return;
+    }
+
+    if(score < 0 || score > 100){
+        alert("分數需介於 0~100");
+        return;
+    }
+
+    db[name] = score;
+
+    saveAndRefresh();
+
+    form.reset();
+
+    document.querySelector("#nameIn").focus();
+});
+
+/* =========================
+   下載 CSV
+========================= */
+document
+.querySelector("#downloadBtn")
+.addEventListener("click",()=>{
+
+    if(Object.keys(db).length === 0){
+        alert("目前沒有資料");
+        return;
+    }
+
+    let csv =
+        "\ufeff姓名,分數,狀態\n";
+
+    const maxScore =
+        Math.max(...Object.values(db));
+
+    Object.entries(db).forEach(([name,score])=>{
+
+        let status =
+            score >= 60
+            ? (score === maxScore
+                ? "最高分禮物"
+                : "及格")
+            : "待輔導";
+
+        csv += `${name},${score},${status}\n`;
+    });
+
+    const blob =
+        new Blob(
+            [csv],
+            {type:"text/csv;charset=utf-8;"}
+        );
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+        `班級成績單_${
+            new Date().toLocaleDateString()
+        }.csv`;
+
+    a.click();
+});
+
+/* =========================
+   清空資料
+========================= */
+document
+.querySelector("#clearBtn")
+.addEventListener("click",()=>{
+
+    if(confirm("確定清空全部資料嗎？")){
+
+        db = {};
+
+        saveAndRefresh();
+    }
+});
+
+/* =========================
+   儲存
+========================= */
+function saveAndRefresh(){
+
+    localStorage.setItem(
+        "teacher_db",
+        JSON.stringify(db)
+    );
+
+    refreshUI();
+}
+
+/* =========================
+   更新畫面
+========================= */
+function refreshUI(){
+
+    const entries =
+        Object.entries(db)
+        .map(([name,score])=>({
+            name,
+            score
+        }));
+
+    if(entries.length === 0){
+
+        rankBody.innerHTML =
+        `
+        <tr>
+            <td colspan="4">
+                尚無資料，請輸入學生分數 🌱
+            </td>
+        </tr>
+        `;
+
+        updateCounters(0,0,0);
+
+        if(chartObj) chartObj.destroy();
+
+        return;
+    }
+
+    /* 排序 */
+    const sorted =
+        entries.sort((a,b)=>b.score-a.score);
+
+    const maxVal =
+        Math.max(
+            ...entries.map(e=>e.score)
+        );
+
+    /* 統計 */
+    let top = 0;
+    let good = 0;
+    let bad = 0;
+    let pass = 0;
+
+    entries.forEach(e=>{
+
+        if(e.score >= 90){
+            top++;
+        }
+        else if(e.score >= 80){
+            good++;
+        }
+
+        if(e.score < 60){
+            bad++;
+        }
+
+        if(e.score >= 60){
+            pass++;
+        }
+    });
+
+    updateCounters(top,good,bad);
+
+    /* 排行榜 */
+    let rank = 1;
+
+    rankBody.innerHTML =
+        sorted.map((s,i)=>{
+
+            if(i > 0 &&
+               s.score < sorted[i-1].score){
+                rank = i + 1;
+            }
+
+            let note = "";
+
+            if(s.score === maxVal &&
+               s.score >= 60){
+
+                note +=
+                `
+                <span class="gift-tag">
+                    🎁 禮物一份
+                </span>
+                `;
+            }
+
+            if(s.score < 60){
+
+                note +=
+                `
+                <span class="study-tag">
+                    📘 課後輔導
+                </span>
+                `;
+            }
+
+            return `
+            <tr>
+                <td>第 ${rank} 名</td>
+
+                <td>${s.name}</td>
+
+                <td class="${
+                    s.score < 60
+                    ? "fail-text"
+                    : ""
+                }">
+                    ${s.score}
+                </td>
+
+                <td>${note}</td>
+            </tr>
+            `;
+        }).join("");
+
+    renderPie(
+        pass,
+        entries.length - pass
+    );
+}
+
+/* =========================
+   更新計數器
+========================= */
+function updateCounters(t,g,b){
+
+    document.querySelector("#n-top")
+    .innerText = t;
+
+    document.querySelector("#n-good")
+    .innerText = g;
+
+    document.querySelector("#n-bad")
+    .innerText = b;
+}
+
+/* =========================
+   圓餅圖
+========================= */
+function renderPie(pass,fail){
+
+    const ctx =
+        document
+        .querySelector("#scorePieChart")
+        .getContext("2d");
+
+    if(chartObj){
+        chartObj.destroy();
+    }
+
+    chartObj =
+        new Chart(ctx,{
+
+            type:"pie",
+
+            data:{
+                labels:["及格","不及格"],
+
+                datasets:[{
+                    data:[pass,fail],
+
+                    backgroundColor:[
+                        "#BFFCC6",
+                        "#FFB7B2"
+                    ],
+
+                    borderColor:"#fff",
+
+                    borderWidth:3
+                }]
+            },
+
+            options:{
+                responsive:true,
+
+                maintainAspectRatio:false,
+
+                plugins:{
+                    legend:{
+                        labels:{
+                            font:{
+                                size:16,
+                                weight:"bold"
+                            }
+                        }
+                    },
+
+                    datalabels:{
+                        formatter:(value,ctx)=>{
+
+                            const total =
+                                ctx.dataset.data[0]
+                                +
+                                ctx.dataset.data[1];
+
+                            return total > 0
+                                ? ((value/total)*100)
+                                    .toFixed(1)
+                                  + "%"
+                                : "";
+                        },
+
+                        color:"#555",
+
+                        font:{
+                            size:18,
+                            weight:"bold"
+                        }
+                    }
+                }
+            }
+        });
+}
+</script>
+
+</body>
+</html>
